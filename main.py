@@ -13,7 +13,7 @@ import json
 from GenMenu import GenMenu
 
 # AIOGRAM
-BOT_TOKEN = "8676203705:AAFklawit4ELDBGxt6RCYOqJdCW4dyDoO-E"
+BOT_TOKEN = ""
 ADMIN = [1020432840]  # Список админов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()
