@@ -1,0 +1,45 @@
+{
+  "food": [
+      {"id":0, "text": "Хлеб ржаной","calories": "214","proteins": "4.7","fats": "0.7","carbohydrates": "49.8"},
+      {"id":1, "text": "Хлебцы Dr.Körner 'Семь злаков'","calories": "290","proteins": "10","fats": "2 ","carbohydrates": "57"},
+      {"id":2, "text": "Хлеб белый","calories": "290.0","proteins": "9.0","fats": "4.0","carbohydrates": "51.6"},
+      {"id":3, "text": "Батон","calories": "330.0","proteins": "8.1","fats": "3.9","carbohydrates": "65.5"},
+      {"id":4, "text": "Гречка (вареная)","calories": "100","proteins": "4.1","fats": "1","carbohydrates": "18.5"},
+      {"id":5, "text": "Рис белый шлифованный (вареный)","calories": "130","proteins": "2.3","fats": "0.2","carbohydrates": "28.7"},
+      {"id":6, "text": "Овсяные хлопья","calories": "352","proteins": "12.3","fats": "6.2","carbohydrates": "61.8"},
+      {"id":7, "text": "Горох вареный","calories": "118","proteins": "8.3","fats": "0.4","carbohydrates": "21"},
+      {"id":8, "text": "Нут вареный","calories": "164","proteins": "8.9","fats": "2.6","carbohydrates": "27.4"},
+      {"id":9, "text": "Картофель отварной ","calories": "75","proteins": "2","fats": "0.4","carbohydrates": "15.8"},
+      {"id":10, "text": "Куриная грудка","calories": "113","proteins": "23.6","fats": "1.9","carbohydrates": "0"},
+      {"id":11, "text": "Индейка, грудка","calories": "114","proteins": "23.6","fats": "1.5","carbohydrates": "0"},
+      {"id":12, "text": "Говядина, вырезка","calories": "158","proteins": "22.2","fats": "7.1","carbohydrates": "0"},
+      {"id":13, "text": "Яйцо куриное","calories": "157","proteins": "12.7","fats": "10.9","carbohydrates": "0.7"},
+      {"id":14, "text": "Молоко 2,5%","calories": "54","proteins": "2.9","fats": "2.5","carbohydrates": "4.8","allergens": "milk"},
+      {"id":15, "text": "Творог нежирный","calories": "110","proteins": "22","fats": "0.6","carbohydrates": "3.3","allergens": "milk"},
+      {"id":16, "text": "Teos Йогурт Греческий 2%","calories": "67.0","proteins": "8.0","fats": "2.0","carbohydrates": "4.2","allergens": "milk"},
+      {"id":17, "text": "Грецкие орехи","calories": "656","proteins": "16.2","fats": "60.8","carbohydrates": "11.1","allergens": "nuts"},
+      {"id":18, "text": "Изюм","calories": "296","proteins": "2.5","fats": "0.54","carbohydrates": "67.7"},
+      {"id":19, "text": "Арахисовая паста","calories": "610.0","proteins": "27.0","fats": "49.0","carbohydrates": "12.0","allergens": "nuts"},
+      {"id":20, "text": "Банан","calories": "96","proteins": "1.5 ","fats": "0.5","carbohydrates": "21"},
+      {"id":21, "text": "Яблоки","calories": "47","proteins": "0.4","fats": "0.4","carbohydrates": "9.8"},
+      {"id":22, "text": "Зефир","calories": "299","proteins": "0.7","fats": "0","carbohydrates": "78.3"},
+      {"id":23, "text": "Мед натуральный","calories": "308","proteins": "0.8 ","fats": "0","carbohydrates": "80.3"}
+
+  ],
+  "ready_breakfast": [
+    [6,18],[6,17],[6,21],[6,23],
+    [13,19,2],[13,19,3]
+  ],
+  "ready_food": [
+    [4,10],[4,11],[4,12],
+    [5,10],[5,11],[5,12],
+    [7,10],[7,11],[7,12],
+    [8,10],[8,11],[8,12],
+    [9,10],[9,11],[9,12]
+  ],
+  "ready_snack": [
+    [15,16],[15,18],[15,20],[15,21],[15,23],
+    [22]
+  ]
+}
+
