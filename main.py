@@ -9,18 +9,22 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
 import json
+import os
+from loguru import logger
+logger.add("debug.log", rotation="00:00", retention="1 week")
 
 from GenMenu import GenMenu
 
 # AIOGRAM
-BOT_TOKEN = ""
+BOT_TOKEN = "8676203705:AAFklawit4ELDBGxt6RCYOqJdCW4dyDoO-E"#  #8682867061:AAE6S_CP3jLKYcjAKsF11qzwOs0I-EQ9Bus
 ADMIN = [1020432840]  # Список админов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()
 
 #   VALUE
-with open("database.json", "r") as db_file:
-    database = json.load(db_file)
+if os.path.isfile("database.json"):
+    with open("database.json", "r") as db_file:
+        database = json.load(db_file)
 gen_menu = GenMenu()
 
 class Set_CPFC_FSM(StatesGroup):
@@ -29,7 +33,7 @@ class Set_CPFC_FSM(StatesGroup):
 # OnStart
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message) -> None:
-    print("start")
+    logger.info("OnClickStart - "+str(message.from_user.id))
     inline_btn_start = InlineKeyboardButton(text='Начать', callback_data="btn_start")
     inline_kb = InlineKeyboardMarkup(
         inline_keyboard=[[inline_btn_start]])
@@ -56,6 +60,7 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
                     "CPFC": [0, 0, 0, 0]}
 
         database['users'].append(new_user)
+        logger.success("Зарегистрирован новый пользователь - "+str(call.from_user.id))
         # Сохранение в файл
         with open("database.json", "w") as base_file:
             json.dump(database, base_file)
@@ -63,6 +68,7 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
     for user_index, user_item in enumerate(database['users']):
 
         # Пользователь найден
+
         if user_item['id'] == call.from_user.id:
 
             # Проверка FSM
@@ -137,6 +143,7 @@ async def cpfc_chosen(message: types.Message, state: FSMContext):
         message.from_user.id,
         text='✅ Отлично, я записал твоё КБЖУ',
         reply_markup=inline_kb)
+    logger.success("Пользователь:"+str(message.from_user.id)+" установил для себя КБЖУ - "+str(message.text))
 @dp.callback_query(F.data == 'btn_set_CPFC')
 async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
     await bot.send_message(
@@ -153,7 +160,7 @@ async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
 async def inline_btn_get_menu(call: CallbackQuery):
     for user_item in database['users']:
         if user_item['id'] == call.from_user.id:
-
+            logger.info("Пользователь:"+str(call.from_user.id)+" заказал меню на день")
             # Удаление сообщения при замене меню
             if call.message.text[0] == "✅":# детектим замену
                 await call.message.delete()
@@ -195,10 +202,10 @@ async def inline_btn_get_menu(call: CallbackQuery):
 async def main() -> None:
     # Запускаем получение обновлений
     try:
+        logger.success("Скрипт запущен")
         await dp.start_polling(bot)
-        print("run")
     except Exception:
-        print(Exception)
+        logger.error(Exception)
 
 
 if __name__ == "__main__":
