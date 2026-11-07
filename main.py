@@ -15,8 +15,8 @@ import difflib
 from GenMenu import GenMenu
 
 # AIOGRAM
-BOT_TOKEN = "8676203705:AAFklawit4ELDBGxt6RCYOqJdCW4dyDoO-E" # prod
-#BOT_TOKEN = "8682867061:AAHFLN1LaKnPFDl0iQMcKv22VcY9q4BezV0" # test
+#BOT_TOKEN = "8676203705:AAFklawit4ELDBGxt6RCYOqJdCW4dyDoO-E" # prod
+BOT_TOKEN = "8682867061:AAHFLN1LaKnPFDl0iQMcKv22VcY9q4BezV0" # test
 ADMIN = [1020432840]  # Список админов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()
@@ -29,6 +29,7 @@ gen_menu = GenMenu()
 
 class Reg(StatesGroup):
     gender = State() # пол человека
+    age = State()
     purpose = State() # цель, поддержание/набор/похудение
     height = State() # рост человека
     weight = State() # вес человека
@@ -51,6 +52,7 @@ async def command_start_handler(message: types.Message) -> None:
     if message.from_user.id not in users_list_id:
         new_user = {"id": message.from_user.id,
                     "gender":"",
+                    "age":0,
                     "purpose":"maintenance", # maintenance\loss\gain
                     "height": 0,
                     "weight": 0,
@@ -114,11 +116,11 @@ async def reg_purpose(message: types.Message, state: FSMContext):
 
         # Фильтр
         if word == "мужчина":
-            var_gender = "man"
+            var_gender = "men"
         elif word == "девушка":
-            var_gender = "woman"
+            var_gender = "women"
         elif word == "женщина":
-            var_gender = "woman"
+            var_gender = "women"
 
         # Запись
         await state.update_data(gender=var_gender)
@@ -216,8 +218,8 @@ async def reg_allergy_honey(message: types.Message, state: FSMContext):
 
         if var_activity in [1,2,3,4,5]:# Проверка на требуемый диапозон
             await state.update_data(activity=var_activity)
-            await state.set_state(Reg.allergy_honey)
-            await bot.send_message(message.from_user.id, text="У тебя есть алергия на мёд?")
+            await state.set_state(Reg.age)
+            await bot.send_message(message.from_user.id, text="Сколько тебе лет?")
         else:
             await bot.send_message(message.from_user.id, text='Какая то ошибка, выбери число от 1 до 5')
             await state.set_state(Reg.activity)
@@ -226,6 +228,29 @@ async def reg_allergy_honey(message: types.Message, state: FSMContext):
     except ValueError:
         await bot.send_message(message.from_user.id, text='Какая то ошибка, выбери число от 1 до 5')
         await state.set_state(Reg.activity)
+        logger.error(ValueError)
+
+@dp.message(Reg.age)
+async def reg_allergy_honey(message: types.Message, state: FSMContext):
+    logger.info("Пользователь:" + str(message.from_user.id) + " установил активность - " + str(message.text))
+    var_age = ""
+
+    # Фильтр
+    try:
+        var_age = int(message.text)
+
+        if var_age < 100:# Проверка на требуемый диапозон
+            await state.update_data(age=var_age)
+            await state.set_state(Reg.allergy_honey)
+            await bot.send_message(message.from_user.id, text="У тебя есть алергия на мёд?")
+        else:
+            await bot.send_message(message.from_user.id, text='Тебе не может быть столько')
+            await state.set_state(Reg.age)
+            logger.error("Не правильно указали возраст")
+
+    except ValueError:
+        await bot.send_message(message.from_user.id, text='Какая то ошибка, укажите возраст цифрой')
+        await state.set_state(Reg.age)
         logger.error(ValueError)
 
 @dp.message(Reg.allergy_honey)
@@ -295,16 +320,31 @@ async def reg_finish(message: types.Message, state: FSMContext):
         data = await state.get_data()
         logger.debug(data)
 
+        # Расчёт кбжу
+        # Цель
+        if data['purpose'] == "gain":
+            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity']) + 200
+        elif data['purpose'] == "loss":
+            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity']) - 200
+        elif data['purpose'] == "maintenance":
+            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity'])
+
+        proteins = (calories * 0.30) / 4
+        fats = (calories * 0.25) / 9
+        carbohydrates = (calories - (proteins * 4) - (fats * 9)) / 4
+
         # Загрузка данных в базу клиента
         for user_index, user_item in enumerate(database['users']):
             if user_item['id'] == message.from_user.id:
                 # Обработка данных
                 database['users'][user_index]['gender'] = data['gender']
+                database['users'][user_index]['age'] = data['age']
                 database['users'][user_index]['purpose'] = data['purpose']
                 database['users'][user_index]['height'] = data['height']
                 database['users'][user_index]['weight'] = data['weight']
                 database['users'][user_index]['activity'] = data['activity']
                 database['users'][user_index]['allergens'] = {"milk": data['allergy_milk'], "nuts": data['allergy_nuts'], "honey": data['allergy_honey']}
+                database['users'][user_index]['CPFC'] = [int(calories),int(proteins),int(fats),int(carbohydrates)]
 
         # Сохранение
         with open("database.json", "w") as base_file:

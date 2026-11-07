@@ -4,7 +4,7 @@ import random
 
 class GenMenu:
     def __init__(self):
-        with open("eat_menu.json", "r",encoding='utf-8') as em_file:
+        with open("eat_menu.json", "r", encoding='utf-8') as em_file:
             self.eat_menu = json.load(em_file)
 
         self.balance_cal = {"breakfast":20,"lunch":40,"dinner":30,"snack":10} # Процент от суточного колаража
@@ -19,6 +19,29 @@ class GenMenu:
         user_cpfc_list = user_cpfc.replace('/', ' ').split()
 
         return True, user_cpfc_list
+    def gen_bmr(self, weight, height, age, gender, activity):
+        # BMR
+        if gender == "men":
+            BMR = 10 * weight + 6.25 * height - 5 * age + 5
+        if gender == "woman":
+            BMR = 10 * weight + 6.25 * height - 5 * age - 161
+
+        # KFA
+        if activity == 1:
+            KFA = 1.2
+        elif activity == 2:
+            KFA = 1.375
+        elif activity == 3:
+            KFA = 1.55
+        elif activity == 4:
+            KFA = 1.725
+        elif activity == 5:
+            KFA = 1.9
+
+        # TDEE
+        TDEE = BMR * KFA
+
+        return TDEE
 
     def get_cpfc_to_item(self,item):
         # Принимает связку item+gram, перемножает начения и выводит кбжу элемента с учётом грамовки
@@ -144,4 +167,5 @@ class GenMenu:
 
 if __name__ == "__main__":
     gm = GenMenu()
+
     gm.gen_menu(gm.user_cpfc_to_CPFC('2500/120/60/400')[1], 0)
