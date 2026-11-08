@@ -59,6 +59,7 @@ class Reg(StatesGroup):
     allergy_honey = State() # Алергия мёд
     allergy_nuts = State()  # Алергия мёд
     allergy_milk = State()  # Алергия мёд
+    choosing_weight = State()
     choosing_cpfc = State()
 
 
@@ -375,17 +376,18 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
         if user_item['id'] == call.from_user.id:# Пользователь найден
             await state.clear()
 
-            text_btn_CPFC = "Изменить КБЖУ : " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
+            text_CPFC = "Твоё КБЖУ: " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
 
             # Inline
-            inline_btn_CPFC = InlineKeyboardButton(text=text_btn_CPFC, callback_data="btn_set_CPFC")
+            inline_btn_CPFC = InlineKeyboardButton(text="Изменить КБЖУ", callback_data="btn_set_CPFC")
             inline_btn_get_menu = InlineKeyboardButton(text='Создать меню', callback_data="btn_get_menu")
             inline_btn_gen_cpfc = InlineKeyboardButton(text='Расчитать КБЖУ', callback_data="btn_gen_cpfc")
-            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC], [inline_btn_gen_cpfc], [inline_btn_get_menu]])
+            inline_btn_weight = InlineKeyboardButton(text='Изменить вес', callback_data="btn_set_weight")
+            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC,inline_btn_weight], [inline_btn_gen_cpfc], [inline_btn_get_menu]])
 
             await bot.send_message(
                 call.from_user.id,
-                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.',
+                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.\n\n'+text_CPFC,
                 reply_markup=inline_kb)
 
             break
@@ -406,39 +408,6 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
                 call.from_user.id,
                 text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
                 reply_markup=inline_kb)
-
-#   НАСТРАИВАЕМЫЕ СТАТЫ
-# КБЖУ
-@dp.message(Reg.choosing_cpfc)
-async def cpfc_chosen(message: types.Message, state: FSMContext):
-    for user_index, user_item in enumerate(database['users']):
-        if user_item['id'] == message.from_user.id:  # Пользователь найден
-            logger.debug(gen_menu.user_cpfc_to_CPFC(message.text)[1])
-            database['users'][user_index]['CPFC'] = gen_menu.user_cpfc_to_CPFC(message.text)[1]
-
-            # Сохранение в файл
-            with open("database.json", "w") as base_file:
-                json.dump(database, base_file)
-
-            await state.clear()
-
-    inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
-    inline_kb = InlineKeyboardMarkup(
-        inline_keyboard=[[inline_btn_global_menu]])
-    await bot.send_message(
-        message.from_user.id,
-        text='✅ Отлично, я записал твоё КБЖУ',
-        reply_markup=inline_kb)
-    logger.success("Пользователь:"+str(message.from_user.id)+" установил для себя КБЖУ - "+str(message.text))
-@dp.callback_query(F.data == 'btn_set_CPFC')
-async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
-    # Устанавливаем пользователю состояние "выбирает кбжу"
-    await state.set_state(Reg.choosing_cpfc)
-    await bot.send_message(
-        call.from_user.id,
-        text='Укажи своё КБЖУ в формате "каллории/белки/жиры/углеводы"\n\n<b>Например: 2500/120/60/400</b>')
-
-
 
 # CLICK - "btn_gen_cpfc"
 @dp.callback_query(F.data == 'btn_gen_cpfc')
@@ -507,6 +476,84 @@ async def inline_btn_get_menu(call: CallbackQuery):
 
 
 
+#   НАСТРАИВАЕМЫЕ СТАТЫ
+# КБЖУ
+@dp.message(Reg.choosing_cpfc)
+async def cpfc_chosen(message: types.Message, state: FSMContext):
+    for user_index, user_item in enumerate(database['users']):
+        if user_item['id'] == message.from_user.id:  # Пользователь найден
+            logger.debug(gen_menu.user_cpfc_to_CPFC(message.text)[1])
+            database['users'][user_index]['CPFC'] = gen_menu.user_cpfc_to_CPFC(message.text)[1]
+
+            # Сохранение в файл
+            with open("database.json", "w") as base_file:
+                json.dump(database, base_file)
+
+            await state.clear()
+
+    inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
+    inline_kb = InlineKeyboardMarkup(
+        inline_keyboard=[[inline_btn_global_menu]])
+    await bot.send_message(
+        message.from_user.id,
+        text='✅ Отлично, я записал твоё КБЖУ',
+        reply_markup=inline_kb)
+    logger.success("Пользователь:"+str(message.from_user.id)+" установил для себя КБЖУ - "+str(message.text))
+@dp.callback_query(F.data == 'btn_set_CPFC')
+async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
+    # Устанавливаем пользователю состояние "выбирает кбжу"
+    await state.set_state(Reg.choosing_cpfc)
+    await bot.send_message(
+        call.from_user.id,
+        text='Укажи своё КБЖУ в формате "каллории/белки/жиры/углеводы"\n\n<b>Например: 2500/120/60/400</b>')
+
+# ВЕС
+@dp.message(Reg.choosing_weight)
+async def weight_chosen(message: types.Message, state: FSMContext):
+    var_weight = ""
+
+    # Фильтр
+    try:  # Проверка на число
+        var_weight = int(message.text)
+
+        if var_weight < 300 and var_weight > 20:  # Проверка на величину
+            for user_index, user_item in enumerate(database['users']):
+                if user_item['id'] == message.from_user.id:  # Пользователь найден
+                    database['users'][user_index]['weight'] = var_weight
+
+                    # Сохранение в файл
+                    with open("database.json", "w") as base_file:
+                        json.dump(database, base_file)
+
+                    await state.clear()
+
+            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_btn_global_menu]])
+            await bot.send_message(
+                message.from_user.id,
+                text='✅ Отлично, я записал твой вес!\n\n<em>Учитывай что твоё КБЖУ было расчитано на старый вес, так что обнови и его в главном меню</em>',
+                reply_markup=inline_kb)
+            logger.success("Пользователь:" + str(message.from_user.id) + " обновил вес - " + str(message.text))
+        else:
+            await bot.send_message(message.from_user.id, text='Не можешь ты столько весить, давай ещё раз')
+            await state.set_state(Reg.choosing_weight)
+            logger.error("Вес слишком большой")
+
+    except ValueError:
+        await bot.send_message(message.from_user.id, text='Какая то ошибка, мне нужна сама цифра на весах')
+        await state.set_state(Reg.choosing_weight)
+        logger.error(ValueError)
+@dp.callback_query(F.data == 'btn_set_weight')
+async def inline_btn_weight(call: CallbackQuery, state: FSMContext):
+    # Устанавливаем пользователю состояние "выбирает кбжу"
+    await state.set_state(Reg.choosing_weight)
+    await bot.send_message(
+        call.from_user.id,
+        text='Напиши мне свой новый вес цифрами')
+
+
+
 async def main() -> None:
     # Запускаем получение обновлений
     try:
@@ -514,7 +561,5 @@ async def main() -> None:
         await dp.start_polling(bot)
     except Exception:
         logger.error(Exception)
-
-
 if __name__ == "__main__":
     asyncio.run(main())
