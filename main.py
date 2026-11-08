@@ -21,12 +21,34 @@ ADMIN = [1020432840]  # Список админов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()
 
+
 #   VALUE
 if os.path.isfile("database.json"):
     with open("database.json", "r") as db_file:
         database = json.load(db_file)
 gen_menu = GenMenu()
 
+
+#   FUN
+def create_user(u_id):# Coздаёт базу пользователя
+    new_user = {"id": u_id,
+                "gender": "",
+                "age": 0,
+                "purpose": "maintenance",  # maintenance\loss\gain
+                "height": 0,
+                "weight": 0,
+                "activity": 0,
+                "allergens": {"milk": False, "nuts": False, "honey": False},
+                "CPFC": [0, 0, 0, 0]}
+
+    database['users'].append(new_user)
+    logger.success("Зарегистрирован новый пользователь - " + str(u_id))
+    # Сохранение в файл
+    with open("database.json", "w") as base_file:
+        json.dump(database, base_file)
+
+
+# FSM
 class Reg(StatesGroup):
     gender = State() # пол человека
     age = State()
@@ -39,6 +61,7 @@ class Reg(StatesGroup):
     allergy_milk = State()  # Алергия мёд
     choosing_cpfc = State()
 
+
 # OnStart
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message) -> None:
@@ -50,23 +73,8 @@ async def command_start_handler(message: types.Message) -> None:
         users_list_id.append(user_item['id'])
 
     if message.from_user.id not in users_list_id:
-        new_user = {"id": message.from_user.id,
-                    "gender":"",
-                    "age":0,
-                    "purpose":"maintenance", # maintenance\loss\gain
-                    "height": 0,
-                    "weight": 0,
-                    "activity": 0,
-                    "allergens": {"milk": False, "nuts": False, "honey": False},
-                    "CPFC": [0, 0, 0, 0]}
 
-        database['users'].append(new_user)
-        logger.success("Зарегистрирован новый пользователь - " + str(message.from_user.id))
-        # Сохранение в файл
-        with open("database.json", "w") as base_file:
-            json.dump(database, base_file)
-
-        # СООБЩЕНИЕ В ЧАТ
+        create_user(message.from_user.id) # Coздаёт базу пользователя
 
         # Настройка Инлайна
         inline_btn_start = InlineKeyboardButton(text='Регистрация', callback_data="btn_create_user")
@@ -87,7 +95,7 @@ async def command_start_handler(message: types.Message) -> None:
         inline_kb = InlineKeyboardMarkup(
             inline_keyboard=[[inline_btn_start]])
 
-        await bot.send_photo(message.chat.id, photo=types.FSInputFile("/logo.jpg"))
+        await bot.send_photo(message.chat.id, photo=types.FSInputFile("logo.jpg"))
 
         await bot.send_message(
             message.from_user.id,
@@ -232,7 +240,7 @@ async def reg_allergy_honey(message: types.Message, state: FSMContext):
 
 @dp.message(Reg.age)
 async def reg_allergy_honey(message: types.Message, state: FSMContext):
-    logger.info("Пользователь:" + str(message.from_user.id) + " установил активность - " + str(message.text))
+    logger.info("Пользователь:" + str(message.from_user.id) + " установил возраст - " + str(message.text))
     var_age = ""
 
     # Фильтр
@@ -321,17 +329,7 @@ async def reg_finish(message: types.Message, state: FSMContext):
         logger.debug(data)
 
         # Расчёт кбжу
-        # Цель
-        if data['purpose'] == "gain":
-            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity']) + 200
-        elif data['purpose'] == "loss":
-            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity']) - 200
-        elif data['purpose'] == "maintenance":
-            calories = gen_menu.gen_bmr(data['weight'], data['height'], data['age'], data['gender'], data['activity'])
-
-        proteins = (calories * 0.30) / 4
-        fats = (calories * 0.25) / 9
-        carbohydrates = (calories - (proteins * 4) - (fats * 9)) / 4
+        CPFC = gen_menu.gen_cpfc(data['weight'], data['height'], data['age'], data['gender'], data['activity'], data['purpose'])
 
         # Загрузка данных в базу клиента
         for user_index, user_item in enumerate(database['users']):
@@ -344,7 +342,7 @@ async def reg_finish(message: types.Message, state: FSMContext):
                 database['users'][user_index]['weight'] = data['weight']
                 database['users'][user_index]['activity'] = data['activity']
                 database['users'][user_index]['allergens'] = {"milk": data['allergy_milk'], "nuts": data['allergy_nuts'], "honey": data['allergy_honey']}
-                database['users'][user_index]['CPFC'] = [int(calories),int(proteins),int(fats),int(carbohydrates)]
+                database['users'][user_index]['CPFC'] = [int(CPFC[0]),int(CPFC[1]),int(CPFC[2]),int(CPFC[3])]
 
         # Сохранение
         with open("database.json", "w") as base_file:
@@ -375,35 +373,36 @@ async def reg_finish(message: types.Message, state: FSMContext):
 async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
     for user_index, user_item in enumerate(database['users']):
         if user_item['id'] == call.from_user.id:# Пользователь найден
+            await state.clear()
 
-            # Проверка FSM
-            fsm_status = await state.get_state()
-            if fsm_status != None and fsm_status[13:] == 'choosing_cpfc':
-                fsm_cpfc = str(dict(await state.get_data())['choosing_cpfc'])
-
-                # Jтработка проверки на дурака
-                if gen_menu.user_cpfc_to_CPFC(fsm_cpfc)[0]:
-                    database['users'][user_index]['CPFC'] = gen_menu.user_cpfc_to_CPFC(fsm_cpfc)[1]
-
-                    # Сохранение в файл
-                    with open("/database.json", "w") as base_file:
-                        json.dump(database, base_file)
-
-                    await state.clear()
-                else:
-                    # Error
-                    print("error")
-
-            text_btn_CPFC = "Указать КБЖУ : " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
+            text_btn_CPFC = "Изменить КБЖУ : " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
 
             # Inline
             inline_btn_CPFC = InlineKeyboardButton(text=text_btn_CPFC, callback_data="btn_set_CPFC")
             inline_btn_get_menu = InlineKeyboardButton(text='Создать меню', callback_data="btn_get_menu")
-            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC], [inline_btn_get_menu]])
+            inline_btn_gen_cpfc = InlineKeyboardButton(text='Расчитать КБЖУ', callback_data="btn_gen_cpfc")
+            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC], [inline_btn_gen_cpfc], [inline_btn_get_menu]])
 
             await bot.send_message(
                 call.from_user.id,
-                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню',
+                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.',
+                reply_markup=inline_kb)
+
+        else: # Пользователь не найден
+            create_user(call.from_user.id)  # Coздаёт базу пользователя
+
+            # Настройка Инлайна
+            inline_btn_start = InlineKeyboardButton(text='Регистрация', callback_data="btn_create_user")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_btn_start]])
+
+            # Отправка лого
+            await bot.send_photo(call.chat.id, photo=types.FSInputFile("logo.jpg"))
+
+            # Отправка сообщения
+            await bot.send_message(
+                call.from_user.id,
+                text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
                 reply_markup=inline_kb)
 
 #   НАСТРАИВАЕМЫЕ СТАТЫ
@@ -429,7 +428,6 @@ async def cpfc_chosen(message: types.Message, state: FSMContext):
         text='✅ Отлично, я записал твоё КБЖУ',
         reply_markup=inline_kb)
     logger.success("Пользователь:"+str(message.from_user.id)+" установил для себя КБЖУ - "+str(message.text))
-
 @dp.callback_query(F.data == 'btn_set_CPFC')
 async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
     # Устанавливаем пользователю состояние "выбирает кбжу"
@@ -438,6 +436,30 @@ async def inline_btn_CPFC(call: CallbackQuery, state: FSMContext):
         call.from_user.id,
         text='Укажи своё КБЖУ в формате "каллории/белки/жиры/углеводы"\n\n<b>Например: 2500/120/60/400</b>')
 
+
+
+# CLICK - "btn_gen_cpfc"
+@dp.callback_query(F.data == 'btn_gen_cpfc')
+async def inline_btn_gen_cpfc(call: CallbackQuery):
+    for user_index, user_item in enumerate(database['users']):
+        if user_item['id'] == call.from_user.id:# Пользователь найден
+            await call.message.delete()
+            CPFC = gen_menu.gen_cpfc(user_item['weight'], user_item['height'], user_item['age'],
+                                     user_item['gender'], user_item['activity'],user_item['purpose'])
+
+            database['users'][user_index]['CPFC'] = [int(CPFC[0]),int(CPFC[1]),int(CPFC[2]),int(CPFC[3])]
+
+            # Сохранение
+            with open("database.json", "w") as base_file:
+                json.dump(database, base_file)
+
+            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_btn_global_menu]])
+
+            await bot.send_message(
+                call.from_user.id,
+                text='<b>КБЖУ обновлено</b>\n\nСмотри, я взял твой рост, вес и тд. и на их основе расчитал для тебя КБЖУ по формуле <em>Миффлина - Сан Жеора.</em>\nТеперь возвращайся назад в меню', reply_markup=inline_kb)
 
 # CLICK - "btn_get_menu"
 @dp.callback_query(F.data == 'btn_get_menu')

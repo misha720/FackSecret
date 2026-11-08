@@ -19,11 +19,14 @@ class GenMenu:
         user_cpfc_list = user_cpfc.replace('/', ' ').split()
 
         return True, user_cpfc_list
-    def gen_bmr(self, weight, height, age, gender, activity):
+
+    def gen_cpfc(self, weight, height, age, gender, activity, purpose):
+        CPFC = [0,0,0,0]
+
         # BMR
         if gender == "men":
             BMR = 10 * weight + 6.25 * height - 5 * age + 5
-        if gender == "woman":
+        if gender == "women":
             BMR = 10 * weight + 6.25 * height - 5 * age - 161
 
         # KFA
@@ -41,7 +44,19 @@ class GenMenu:
         # TDEE
         TDEE = BMR * KFA
 
-        return TDEE
+        # Цель
+        if purpose == "gain":
+            CPFC[0] = TDEE + 200
+        elif purpose == "loss":
+            CPFC[0] = TDEE - 200
+        elif purpose == "maintenance":
+            CPFC[0] = TDEE
+
+        CPFC[1] = (CPFC[0] * 0.30) / 4 # proteins
+        CPFC[2] = (CPFC[0] * 0.25) / 9 # fats
+        CPFC[3] = (CPFC[0] - (CPFC[1] * 4) - (CPFC[2] * 9)) / 4 # carbohydrates
+
+        return CPFC
 
     def get_cpfc_to_item(self,item):
         # Принимает связку item+gram, перемножает начения и выводит кбжу элемента с учётом грамовки
