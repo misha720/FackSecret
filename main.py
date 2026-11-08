@@ -15,7 +15,7 @@ import difflib
 from GenMenu import GenMenu
 
 # AIOGRAM
-#BOT_TOKEN = "8676203705:AAFklawit4ELDBGxt6RCYOqJdCW4dyDoO-E" # prod
+#BOT_TOKEN = "8676203705:AAGwQA8bIM8NlKidODj6VpmWPVuqM1lXNqo" # prod
 BOT_TOKEN = "8682867061:AAHFLN1LaKnPFDl0iQMcKv22VcY9q4BezV0" # test
 ADMIN = [1020432840]  # Список админов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
@@ -388,7 +388,9 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
                 text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.',
                 reply_markup=inline_kb)
 
-        else: # Пользователь не найден
+            break
+
+    else: # Пользователь не найден
             create_user(call.from_user.id)  # Coздаёт базу пользователя
 
             # Настройка Инлайна
@@ -397,7 +399,7 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
                 inline_keyboard=[[inline_btn_start]])
 
             # Отправка лого
-            await bot.send_photo(call.chat.id, photo=types.FSInputFile("logo.jpg"))
+            await bot.send_photo(call.from_user.id, photo=types.FSInputFile("logo.jpg"))
 
             # Отправка сообщения
             await bot.send_message(
