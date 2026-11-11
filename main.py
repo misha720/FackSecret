@@ -111,13 +111,13 @@ async def reg_gender(call: CallbackQuery, state: FSMContext):
     logger.info("Пользователь:" + str(call.from_user.id) + " начал регистрацию")
 
     await state.set_state(Reg.gender)
-    await bot.send_message(call.from_user.id, text="Напиши свой гендер")
+    await bot.send_message(call.from_user.id, text="Напиши свой пол. Мужчина или женщина?")
 
 @dp.message(Reg.gender)
 async def reg_purpose(message: types.Message, state: FSMContext):
     logger.info("Пользователь:" + str(message.from_user.id) + " установил для себя гендер - " + str(message.text))
 
-    control_list = ["мужчина", "девушка", "женщина"]
+    control_list = ["мужчина", "девушка", "женщина", "парень"]
     var_gender = ""
 
     try:
@@ -125,6 +125,8 @@ async def reg_purpose(message: types.Message, state: FSMContext):
 
         # Фильтр
         if word == "мужчина":
+            var_gender = "men"
+        if word == "парень":
             var_gender = "men"
         elif word == "девушка":
             var_gender = "women"
@@ -146,7 +148,7 @@ async def reg_purpose(message: types.Message, state: FSMContext):
 async def reg_height(message: types.Message, state: FSMContext):
     logger.info("Пользователь:" + str(message.from_user.id) + " установил цель - " + str(message.text))
 
-    control_list = ["набор", "похудение", "поддержание"]
+    control_list = ["набор", "набор", "похудение", "сушка", "поддержание"]
     var_purpose = ""
 
     try:
@@ -155,7 +157,11 @@ async def reg_height(message: types.Message, state: FSMContext):
         # Фильтр
         if word == "набор":
             var_purpose = "gain"
+        elif word == "масса":
+            var_purpose = "gain"
         elif word == "похудение":
+            var_purpose = "loss"
+        elif word == "сушка":
             var_purpose = "loss"
         elif word == "поддержание":
             var_purpose = "maintenance"

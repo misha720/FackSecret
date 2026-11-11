@@ -13,7 +13,7 @@
       {"id":10, "text": "Куриная грудка","calories": "113","proteins": "23.6","fats": "1.9","carbohydrates": "0"},
       {"id":11, "text": "Индейка, грудка","calories": "114","proteins": "23.6","fats": "1.5","carbohydrates": "0"},
       {"id":12, "text": "Говядина, вырезка","calories": "158","proteins": "22.2","fats": "7.1","carbohydrates": "0"},
-      {"id":13, "text": "Яйцо куриное","calories": "157","proteins": "12.7","fats": "10.9","carbohydrates": "0.7"},
+      {"id":13, "text": "Яйцо куриное(варёное)","calories": "157","proteins": "12.7","fats": "10.9","carbohydrates": "0.7"},
       {"id":14, "text": "Молоко 2,5%","calories": "54","proteins": "2.9","fats": "2.5","carbohydrates": "4.8","allergens": "milk"},
       {"id":15, "text": "Творог нежирный","calories": "110","proteins": "22","fats": "0.6","carbohydrates": "3.3","allergens": "milk"},
       {"id":16, "text": "Teos Йогурт Греческий 2%","calories": "67.0","proteins": "8.0","fats": "2.0","carbohydrates": "4.2","allergens": "milk"},
@@ -23,23 +23,42 @@
       {"id":20, "text": "Банан","calories": "96","proteins": "1.5 ","fats": "0.5","carbohydrates": "21"},
       {"id":21, "text": "Яблоки","calories": "47","proteins": "0.4","fats": "0.4","carbohydrates": "9.8"},
       {"id":22, "text": "Зефир","calories": "299","proteins": "0.7","fats": "0","carbohydrates": "78.3"},
-      {"id":23, "text": "Мед натуральный","calories": "308","proteins": "0.8 ","fats": "0","carbohydrates": "80.3"}
-
+      {"id":23, "text": "Мед натуральный","calories": "308","proteins": "25","fats": "0","carbohydrates": "80.3"},
+      {"id":24, "text": "Протеин","calories": "150","proteins": "25","fats": "1","carbohydrates": "3"},
+      {"id":25, "text": "Булгур (приготовленный)","calories": "83","proteins": "3.08","fats": "0.24","carbohydrates": "14.08"},
+      {"id":26, "text": "Сырники","calories": "195.2","proteins": "19.6","fats": "5.5","carbohydrates": "16.1"},
+      {"id":27, "text": "Клубника","calories": "41","proteins": "0.8","fats": "0.4","carbohydrates": "7.5"},
+      {"id":28, "text": "Голубика","calories": "39","proteins": "1","fats": "0.5","carbohydrates": "6.6"},
+      {"id":29, "text": "Яйцо (жаренное)","calories": "196","proteins": "13.6","fats": "14.8","carbohydrates": "0.8"},
+      {"id":30, "text": "Помидор","calories": "18","proteins": "0.9","fats": "0.2","carbohydrates": "2.7"},
+      {"id":31, "text": "Сыр (лёгкий)","calories": "218","proteins": "24","fats": "13.5","carbohydrates": "0"},
+      {"id":32, "text": "Баклажаны (на пару)","calories": "29","proteins": "1","fats": "1","carbohydrates": "4"},
+      {"id":33, "text": "Креветки","calories": "71","proteins": "13.6","fats": "1","carbohydrates": "0.9"},
+      {"id":34, "text": "Авокадо","calories": "212","proteins": "2","fats": "20","carbohydrates": "6"},
+      {"id":35, "text": "Огурцы","calories": "15","proteins": "0.7","fats": "0.1","carbohydrates": "3.1"},
+      {"id":36, "text": "Салат Айсберг","calories": "16","proteins": "1.5","fats": "0.2","carbohydrates": "2"},
+      {"id":37, "text": "Тунец","calories": "139","proteins": "24.4","fats": "4.6","carbohydrates": "0"},
+      {"id":38, "text": "Кукуруза","calories": "325","proteins": "10.3","fats": "4.9","carbohydrates": "60"},
+      {"id":39, "text": "Горошек","calories": "55","proteins": "5","fats": "0.2","carbohydrates": "8.3"},
+      {"id":40, "text": "Макароны","calories": "338","proteins": "11","fats": "1.3","carbohydrates": "70.5"}
   ],
   "ready_breakfast": [
     [6,18],[6,17],[6,21],[6,23],
-    [13,19,2],[13,19,3]
+    [13,19,2],[13,19,3],
+    [26,3,19],[15,27,28],[29,0,30,31]
   ],
   "ready_food": [
     [4,10],[4,11],[4,12],
     [5,10],[5,11],[5,12],
     [7,10],[7,11],[7,12],
     [8,10],[8,11],[8,12],
-    [9,10],[9,11],[9,12]
+    [9,10],[9,11],[9,12],
+    [11,25,32],[33,34,0,35,36],[5,33,35,39],
+    [40,10,30],[40,12,30],[40,11,30]
   ],
   "ready_snack": [
     [15,16],[15,18],[15,20],[15,21],[15,23],
-    [22]
+    [22],[37,38,35,36],[16,27,28,17]
   ]
 }
 
