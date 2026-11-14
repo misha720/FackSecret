@@ -103,6 +103,113 @@ async def command_start_handler(message: types.Message) -> None:
             text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
             reply_markup=inline_kb)
 
+# CLICK - "btn_global_menu"
+@dp.callback_query(F.data == 'btn_global_menu')
+async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
+    for user_index, user_item in enumerate(database['users']):
+        if user_item['id'] == call.from_user.id:# Пользователь найден
+            await state.clear()
+
+            text_CPFC = "Твоё КБЖУ: " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
+
+            # Inline
+            inline_btn_CPFC = InlineKeyboardButton(text="Изменить КБЖУ", callback_data="btn_set_CPFC")
+            inline_btn_get_menu = InlineKeyboardButton(text='Создать меню', callback_data="btn_get_menu")
+            inline_btn_gen_cpfc = InlineKeyboardButton(text='Расчитать КБЖУ', callback_data="btn_gen_cpfc")
+            inline_btn_weight = InlineKeyboardButton(text='Изменить вес', callback_data="btn_set_weight")
+            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC,inline_btn_weight], [inline_btn_gen_cpfc], [inline_btn_get_menu]])
+
+            await bot.send_message(
+                call.from_user.id,
+                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.\n\n'+text_CPFC,
+                reply_markup=inline_kb)
+
+            break
+
+    else: # Пользователь не найден
+            create_user(call.from_user.id)  # Coздаёт базу пользователя
+
+            # Настройка Инлайна
+            inline_btn_start = InlineKeyboardButton(text='Регистрация', callback_data="btn_create_user")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_btn_start]])
+
+            # Отправка лого
+            await bot.send_photo(call.from_user.id, photo=types.FSInputFile("logo.jpg"))
+
+            # Отправка сообщения
+            await bot.send_message(
+                call.from_user.id,
+                text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
+                reply_markup=inline_kb)
+
+# CLICK - "btn_gen_cpfc"
+@dp.callback_query(F.data == 'btn_gen_cpfc')
+async def inline_btn_gen_cpfc(call: CallbackQuery):
+    for user_index, user_item in enumerate(database['users']):
+        if user_item['id'] == call.from_user.id:# Пользователь найден
+            await call.message.delete()
+            CPFC = gen_menu.gen_cpfc(user_item['weight'], user_item['height'], user_item['age'],
+                                     user_item['gender'], user_item['activity'],user_item['purpose'])
+
+            database['users'][user_index]['CPFC'] = [int(CPFC[0]),int(CPFC[1]),int(CPFC[2]),int(CPFC[3])]
+
+            # Сохранение
+            with open("database.json", "w") as base_file:
+                json.dump(database, base_file)
+
+            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_btn_global_menu]])
+
+            await bot.send_message(
+                call.from_user.id,
+                text='<b>КБЖУ обновлено</b>\n\nСмотри, я взял твой рост, вес и тд. и на их основе расчитал для тебя КБЖУ по формуле <em>Миффлина - Сан Жеора.</em>\nТеперь возвращайся назад в меню', reply_markup=inline_kb)
+
+# CLICK - "btn_get_menu"
+@dp.callback_query(F.data == 'btn_get_menu')
+async def inline_btn_get_menu(call: CallbackQuery):
+    for user_item in database['users']:
+        if user_item['id'] == call.from_user.id:
+            logger.info("Пользователь:"+str(call.from_user.id)+" заказал меню на день")
+            # Удаление сообщения при замене меню
+            if call.message.text[0] == "✅":# детектим замену
+                await call.message.delete()
+
+            result_menu = gen_menu.gen_menu(user_item['CPFC'], user_item['allergens'])
+            text_menu = ""
+            type_food = "" # завтрак обед ужин перекус
+
+            for food_intake in result_menu: # перебираем приёмы пищи
+
+                if food_intake == "breakfast":
+                    type_food = "<b>Завтрак:</b>\n"
+                elif food_intake == "lunch":
+                    type_food = "<b>Обед:</b>\n"
+                elif food_intake == "dinner":
+                    type_food = "<b>Ужин:</b>\n"
+                elif food_intake == "second_dinner":
+                    type_food = "<b>Второй Ужин:</b>\n"
+                elif food_intake == "snack":
+                    type_food = "<b>Перекус:</b>\n"
+                text_menu += type_food
+
+                for item_food_intake in result_menu[food_intake]: # Перебираем каждое блюдо
+                    text_menu += "<em>" + item_food_intake[0]['text'] + "</em> - " + str(item_food_intake[1]) + "г.\n"
+                text_menu += "\n"
+
+            global_sum_cpfc_food = gen_menu.global_sum_cpfc_food(result_menu)
+            text_menu += "<b>Общая каллорийность - </b>" + str(int(global_sum_cpfc_food[0])) + " / " + str(int(global_sum_cpfc_food[1])) + " / " + str(int(global_sum_cpfc_food[2])) + " / " + str(int(global_sum_cpfc_food[3]))
+
+            inline_get_menu = InlineKeyboardButton(text='🔄 Заменить', callback_data="btn_get_menu")
+            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
+            inline_kb = InlineKeyboardMarkup(
+                inline_keyboard=[[inline_get_menu],[inline_btn_global_menu]])
+
+            await bot.send_message(
+                call.from_user.id,
+                text='✅ Вот твоё меню на сегодня:\n\n'+text_menu, reply_markup=inline_kb)
+
 
 
 #   РЕГИСТРАЦИЯ
@@ -372,113 +479,6 @@ async def reg_finish(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, text='Какая то ошибка, выбери "да" или "нет"')
         await state.set_state(Reg.allergy_milk)
         logger.error(IndexError)
-
-
-
-# CLICK - "btn_global_menu"
-@dp.callback_query(F.data == 'btn_global_menu')
-async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
-    for user_index, user_item in enumerate(database['users']):
-        if user_item['id'] == call.from_user.id:# Пользователь найден
-            await state.clear()
-
-            text_CPFC = "Твоё КБЖУ: " + str(user_item['CPFC'][0]) + "/" + str(user_item['CPFC'][1]) + "/" + str(user_item['CPFC'][2]) + "/" + str(user_item['CPFC'][3])
-
-            # Inline
-            inline_btn_CPFC = InlineKeyboardButton(text="Изменить КБЖУ", callback_data="btn_set_CPFC")
-            inline_btn_get_menu = InlineKeyboardButton(text='Создать меню', callback_data="btn_get_menu")
-            inline_btn_gen_cpfc = InlineKeyboardButton(text='Расчитать КБЖУ', callback_data="btn_gen_cpfc")
-            inline_btn_weight = InlineKeyboardButton(text='Изменить вес', callback_data="btn_set_weight")
-            inline_kb = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_CPFC,inline_btn_weight], [inline_btn_gen_cpfc], [inline_btn_get_menu]])
-
-            await bot.send_message(
-                call.from_user.id,
-                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.\n\n'+text_CPFC,
-                reply_markup=inline_kb)
-
-            break
-
-    else: # Пользователь не найден
-            create_user(call.from_user.id)  # Coздаёт базу пользователя
-
-            # Настройка Инлайна
-            inline_btn_start = InlineKeyboardButton(text='Регистрация', callback_data="btn_create_user")
-            inline_kb = InlineKeyboardMarkup(
-                inline_keyboard=[[inline_btn_start]])
-
-            # Отправка лого
-            await bot.send_photo(call.from_user.id, photo=types.FSInputFile("logo.jpg"))
-
-            # Отправка сообщения
-            await bot.send_message(
-                call.from_user.id,
-                text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
-                reply_markup=inline_kb)
-
-# CLICK - "btn_gen_cpfc"
-@dp.callback_query(F.data == 'btn_gen_cpfc')
-async def inline_btn_gen_cpfc(call: CallbackQuery):
-    for user_index, user_item in enumerate(database['users']):
-        if user_item['id'] == call.from_user.id:# Пользователь найден
-            await call.message.delete()
-            CPFC = gen_menu.gen_cpfc(user_item['weight'], user_item['height'], user_item['age'],
-                                     user_item['gender'], user_item['activity'],user_item['purpose'])
-
-            database['users'][user_index]['CPFC'] = [int(CPFC[0]),int(CPFC[1]),int(CPFC[2]),int(CPFC[3])]
-
-            # Сохранение
-            with open("database.json", "w") as base_file:
-                json.dump(database, base_file)
-
-            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
-            inline_kb = InlineKeyboardMarkup(
-                inline_keyboard=[[inline_btn_global_menu]])
-
-            await bot.send_message(
-                call.from_user.id,
-                text='<b>КБЖУ обновлено</b>\n\nСмотри, я взял твой рост, вес и тд. и на их основе расчитал для тебя КБЖУ по формуле <em>Миффлина - Сан Жеора.</em>\nТеперь возвращайся назад в меню', reply_markup=inline_kb)
-
-# CLICK - "btn_get_menu"
-@dp.callback_query(F.data == 'btn_get_menu')
-async def inline_btn_get_menu(call: CallbackQuery):
-    for user_item in database['users']:
-        if user_item['id'] == call.from_user.id:
-            logger.info("Пользователь:"+str(call.from_user.id)+" заказал меню на день")
-            # Удаление сообщения при замене меню
-            if call.message.text[0] == "✅":# детектим замену
-                await call.message.delete()
-
-            result_menu = gen_menu.gen_menu(user_item['CPFC'], user_item['allergens'])
-            text_menu = ""
-            type_food = "" # завтрак обед ужин перекус
-
-            for food_intake in result_menu: # перебираем приёмы пищи
-
-                if food_intake == "breakfast":
-                    type_food = "<b>Завтрак:</b>\n"
-                elif food_intake == "lunch":
-                    type_food = "<b>Обед:</b>\n"
-                elif food_intake == "dinner":
-                    type_food = "<b>Ужин:</b>\n"
-                elif food_intake == "snack":
-                    type_food = "<b>Перекус:</b>\n"
-                text_menu += type_food
-
-                for item_food_intake in result_menu[food_intake]: # Перебираем каждое блюдо
-                    text_menu += "<em>" + item_food_intake[0]['text'] + "</em> - " + str(item_food_intake[1]) + "г.\n"
-                text_menu += "\n"
-
-            global_sum_cpfc_food = gen_menu.global_sum_cpfc_food(result_menu)
-            text_menu += "<b>Общая каллорийность - </b>" + str(int(global_sum_cpfc_food[0])) + " / " + str(int(global_sum_cpfc_food[1])) + " / " + str(int(global_sum_cpfc_food[2])) + " / " + str(int(global_sum_cpfc_food[3]))
-
-            inline_get_menu = InlineKeyboardButton(text='🔄 Заменить', callback_data="btn_get_menu")
-            inline_btn_global_menu = InlineKeyboardButton(text='Назад', callback_data="btn_global_menu")
-            inline_kb = InlineKeyboardMarkup(
-                inline_keyboard=[[inline_get_menu],[inline_btn_global_menu]])
-
-            await bot.send_message(
-                call.from_user.id,
-                text='✅ Вот твоё меню на сегодня:\n\n'+text_menu, reply_markup=inline_kb)
 
 
 

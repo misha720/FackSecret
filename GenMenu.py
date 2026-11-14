@@ -7,7 +7,7 @@ class GenMenu:
         with open("eat_menu.json", "r", encoding='utf-8') as em_file:
             self.eat_menu = json.load(em_file)
 
-        self.balance_cal = {"breakfast":20,"lunch":40,"dinner":30,"snack":10} # Процент от суточного колаража
+        self.balance_cal = {"breakfast":20,"lunch":30,"dinner":30,"second_dinner":20,"snack":10} # Процент от суточного колаража
 
     def one_gram(self, num):
         # Принимает число в 100 грамм и переводит в 1
@@ -92,30 +92,25 @@ class GenMenu:
 
 
     # ЭТАПЫ СОЗДАНИЯ МЕНЮ
-    def fun_recepton_food_to_protocol(self):
+    def fun_recepton_food_to_protocol(self, food_protocol):
         # Принимает айди блюд в приёме пищи и вставляет данные из таблицы
-        list_item_menu = []
-        food_protocol = {
-            "breakfast": [],
-            "lunch": [],
-            "dinner": [],
-            "snack": []
-        }
 
         # Получаем айди
 
         # Перебираем приёмы пищи
         for ead in list(food_protocol.keys()):
-            # настраиваем список готовых блюд по приёму пищи
+
+            # рандомно добавляем список готовых блюд по приёму пищи
             if ead == "breakfast":
                 item_pos_ready_food = random.choice(self.eat_menu["ready_breakfast"])
 
-            elif ead == "lunch" or ead == "dinner":
+            elif ead == "lunch" or ead == "dinner" or ead == "second_dinner":
                 item_pos_ready_food = random.choice(self.eat_menu["ready_food"])
 
             elif ead == "snack":
                 item_pos_ready_food = random.choice(self.eat_menu["ready_snack"])
 
+            # заполняем food_protocol рандомными пп и добавляем граммы
             for id in item_pos_ready_food:
                 for item_food in self.eat_menu['food']:
                     if item_food['id'] == id:
@@ -130,8 +125,6 @@ class GenMenu:
         # б = а / 2  -  побочные
 
         for food in menu.keys(): # Перебираем приёмы пищи
-
-
             for index_pos_protocol, item_pos_protocol in enumerate(menu[food]):  # перебираем позиции в приёме пищи
                 target_gram_protocol = []
                 c_target = 100 # Дальше будет делиться с каждой позицией в приёме пищи(%)
@@ -155,6 +148,12 @@ class GenMenu:
                     menu[food][index_pos_protocol][1] += 1
                     cal_food = self.get_cpfc_to_item([menu[food][index_pos_protocol][0], menu[food][index_pos_protocol][1]])
 
+                # Защита от огромного веса продукта (max-size)
+                if "max-size" in menu[food][index_pos_protocol][0]:# Если есть max-size
+                    if menu[food][index_pos_protocol][1] > int(menu[food][index_pos_protocol][0]['max-size']):# Проверяем есть ли привышение max-size
+                        #print("correct - " + str(menu[food][index_pos_protocol][1] int(menu[food][index_pos_protocol][0]['max-size'])))
+                        menu[food][index_pos_protocol][1] = int(menu[food][index_pos_protocol][0]['max-size'])
+
     def gen_menu(self, CPFC_value, allergens_value):
         # Ответ будет текст
 
@@ -162,20 +161,42 @@ class GenMenu:
 
         self.CPFC = CPFC_value
         self.allergens = allergens_value
-        #print(allergens_value)
-        self.perfect_percentage = [int(self.CPFC[0]) / 4,int(self.CPFC[1]) / 4,int(self.CPFC[2]) / 4,int(self.CPFC[3]) / 4] # Сбалансированная норма на приём пищи
+        self.perfect_percentage = [int(self.CPFC[0]),int(self.CPFC[1]),int(self.CPFC[2]),int(self.CPFC[3])]
+        protocol = {
+            "breakfast": [],
+            "lunch": [],
+            "dinner": [],
+            "second_dinner": [],
+            "snack": []
+        }
+
+        # Удаляем второй ужин если каллораж маленький
+        if int(self.CPFC[0]) < 2300: # то удаляем пп
+            del protocol['second_dinner']
+            food_protocol = protocol.copy()
+        else:
+            food_protocol = protocol.copy()
+
+        for i in range(len(self.perfect_percentage)): # Сбалансированная норма на приём пищи
+            self.perfect_percentage[i] /= len(food_protocol)
 
         # Готовый список
 
         # ЗАПОЛНЕНИЕ МЕНЮ ПРОДУКТАМИ
-        food_list = self.fun_recepton_food_to_protocol()
+        food_list = self.fun_recepton_food_to_protocol(food_protocol)
 
-        #Проверка на совпадения обеда и ужина
+        #Проверка на совпадения обеда, ужина и 2-ужина
         if food_list['lunch'] == food_list['dinner']:
-            food_list = self.fun_recepton_food_to_protocol()
+            food_list = self.fun_recepton_food_to_protocol(food_protocol)
 
         # НАСТРОЙКА ГРАМОВКИ
         self.fun_recepton_gramm(food_list)
+
+
+        for ead in food_list:
+            print(ead)
+            for item_ead in food_list[ead]:
+                print(" - "+str(item_ead))
 
         return food_list
 
@@ -183,4 +204,4 @@ class GenMenu:
 if __name__ == "__main__":
     gm = GenMenu()
 
-    gm.gen_menu(gm.user_cpfc_to_CPFC('2500/120/60/400')[1], 0)
+    gm.gen_menu(gm.user_cpfc_to_CPFC('3600/120/60/400')[1], 0)
