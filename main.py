@@ -1,6 +1,7 @@
 #   IMPORTS
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -148,7 +149,10 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
 async def inline_btn_gen_cpfc(call: CallbackQuery):
     for user_index, user_item in enumerate(database['users']):
         if user_item['id'] == call.from_user.id:# Пользователь найден
-            await call.message.delete()
+            try:
+                await call.message.delete()
+            except TelegramBadRequest:
+                pass
             CPFC = gen_menu.gen_cpfc(user_item['weight'], user_item['height'], user_item['age'],
                                      user_item['gender'], user_item['activity'],user_item['purpose'])
 
@@ -173,8 +177,11 @@ async def inline_btn_get_menu(call: CallbackQuery):
         if user_item['id'] == call.from_user.id:
             logger.info("Пользователь:"+str(call.from_user.id)+" заказал меню на день")
             # Удаление сообщения при замене меню
-            if call.message.text[0] == "✅":# детектим замену
-                await call.message.delete()
+            try:
+                if call.message.text[0] == "✅":# детектим замену
+                    await call.message.delete()
+            except TelegramBadRequest:
+                pass
 
             result_menu = gen_menu.gen_menu(user_item['CPFC'], user_item['allergens'])
             text_menu = ""
