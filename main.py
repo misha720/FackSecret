@@ -202,7 +202,10 @@ async def inline_btn_get_menu(call: CallbackQuery):
                 text_menu += type_food
 
                 for item_food_intake in result_menu[food_intake]: # Перебираем каждое блюдо
-                    text_menu += "<em>" + item_food_intake[0]['text'] + "</em> - " + str(item_food_intake[1]) + "г.\n"
+                    if "unit" in item_food_intake[0]:# Если продукт измеряется единицами, то поменять на "шт." и посчитать сколько
+                        text_menu += "<em>" + item_food_intake[0]['text'] + "</em> - " + str(int(item_food_intake[1] / int(item_food_intake[0]['unit']))) + "шт.\n"
+                    else:
+                        text_menu += "<em>" + item_food_intake[0]['text'] + "</em> - " + str(item_food_intake[1]) + "г.\n"
                 text_menu += "\n"
 
             global_sum_cpfc_food = gen_menu.global_sum_cpfc_food(result_menu)
