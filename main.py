@@ -33,6 +33,11 @@ logger.add("debug.log", rotation="00:00", retention="1 week")
 if os.path.isfile("database.json"):
     with open("database.json", "r") as db_file:
         database = json.load(db_file)
+
+if os.path.isfile("text.json"):
+    with open("text.json", "r", encoding='utf-8') as text_file:
+        text_bot = json.load(text_file)
+
 gen_menu = GenMenu()
 
 
@@ -106,7 +111,7 @@ async def command_start_handler(message: types.Message) -> None:
         # Отправка сообщения
         await bot.send_message(
             message.from_user.id,
-            text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
+            text=text_bot['start'],
             reply_markup=inline_kb)
 
     else: # Пользователь существует
@@ -118,7 +123,7 @@ async def command_start_handler(message: types.Message) -> None:
 
         await bot.send_message(
             message.from_user.id,
-            text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
+            text=text_bot['start'],
             reply_markup=inline_kb)
 
 # /notification
@@ -191,7 +196,7 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
 
             await bot.send_message(
                 call.from_user.id,
-                text='<b>Главное меню</b>\n\nЯ автаматически расчитал для тебя калораж, но если хочешь, можешь его изменить. Так же тут много других кнопочек, но главная - Составить меню\n\nВажное НО. Любые расчёты — это лишь ориентир. В процессе следи за весом и самочувствием, при необходимости корректируй рацион.\n\n'+text_CPFC,
+                text=text_bot["global_menu"]+text_CPFC,
                 reply_markup=inline_kb)
 
             break
@@ -210,7 +215,7 @@ async def inline_btn_get_menu(call: CallbackQuery, state: FSMContext):
             # Отправка сообщения
             await bot.send_message(
                 call.from_user.id,
-                text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
+                text=text_bot['start'],
                 reply_markup=inline_kb)
 
 # CLICK - "btn_gen_cpfc"
@@ -237,7 +242,8 @@ async def inline_btn_gen_cpfc(call: CallbackQuery):
 
             await bot.send_message(
                 call.from_user.id,
-                text='<b>КБЖУ обновлено</b>\n\nСмотри, я взял твой рост, вес и тд. и на их основе расчитал для тебя КБЖУ по формуле <em>Миффлина - Сан Жеора.</em>\nТеперь возвращайся назад в меню', reply_markup=inline_kb)
+                text=text_bot['gen_cpfc'],
+                reply_markup=inline_kb)
 
 # CLICK - "btn_get_menu"
 @dp.callback_query(F.data == 'btn_get_menu')
@@ -357,7 +363,7 @@ async def reg_height(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, text="Какой у тебя рост?")
 
     except IndexError:
-        await bot.send_message(message.from_user.id, text='Какая то ошибка, введи пожалуйста что то из этого - "набор","похудение","поддержание"')
+        await bot.send_message(message.from_user.id, text='Какая-то ошибка, введи, пожалуйста, что-то из этого - "набор", "похудение", "поддержание".')
         await state.set_state(Reg.purpose)
         logger.error(IndexError)
 
