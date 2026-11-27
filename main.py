@@ -1,5 +1,11 @@
 #   IMPORTS
 import asyncio
+import time
+import json
+import os
+from loguru import logger
+import difflib
+
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart
@@ -8,12 +14,9 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardBut
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-import json
-import os
-from loguru import logger
-logger.add("debug.log", rotation="00:00", retention="1 week")
-import difflib
 from GenMenu import GenMenu
+
+
 
 # AIOGRAM
 #BOT_TOKEN = "8676203705:AAGwQA8bIM8NlKidODj6VpmWPVuqM1lXNqo" # prod
@@ -23,11 +26,15 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()
 
 
+
 #   VALUE
+logger.add("debug.log", rotation="00:00", retention="1 week")
+
 if os.path.isfile("database.json"):
     with open("database.json", "r") as db_file:
         database = json.load(db_file)
 gen_menu = GenMenu()
+
 
 
 #   FUN
@@ -49,8 +56,11 @@ def create_user(u_id):# Coздаёт базу пользователя
         json.dump(database, base_file)
 
 
+
 # FSM
 class Reg(StatesGroup):
+
+    # Регистрация
     gender = State() # пол человека
     age = State()
     purpose = State() # цель, поддержание/набор/похудение
@@ -60,11 +70,18 @@ class Reg(StatesGroup):
     allergy_honey = State() # Алергия мёд
     allergy_nuts = State()  # Алергия мёд
     allergy_milk = State()  # Алергия мёд
+
+    # Настраиваемые параметры
     choosing_weight = State()
     choosing_cpfc = State()
 
+    # Уведомления
+    notify_photo = State()
+    notify_text = State()
 
-# OnStart
+
+
+# /start
 @dp.message(CommandStart())
 async def command_start_handler(message: types.Message) -> None:
     logger.info("OnClickStart - " + str(message.from_user.id))
@@ -103,6 +120,58 @@ async def command_start_handler(message: types.Message) -> None:
             message.from_user.id,
             text='<b>Добро пожаловать в FackSecret</b>😈\n\nЯ создан помочь с тем, что бы ты больше не думал <em>"Что сегодня съесть?"</em>. Пока у меня не большой функционал, но я стараюсь, а тебе приятного пользования.\n\nДавай я тебе помогу подобрать меню на сегодня?',
             reply_markup=inline_kb)
+
+# /notification
+@dp.message(F.text == "/notification")
+async def get_statistics(message: types.Message, state: FSMContext):
+    # Отправляет запланировоное уведомление
+    if int(message.from_user.id) in ADMIN:
+
+        await state.set_state(Reg.notify_photo)
+
+        await bot.send_message(
+            message.from_user.id,
+            text="Отправь фото уведомления")
+@dp.message(Reg.notify_photo)
+async def notify_photo(message: types.Message, state: FSMContext):
+    if message.photo:
+        for photo in message.photo:
+            file_path = "photo_notify.jpg"
+            await message.bot.download(file=photo.file_id, destination=file_path)
+
+        await state.update_data(notify_photo=file_path)
+        await state.set_state(Reg.notify_text)
+        await bot.send_message(message.from_user.id,
+                               text="Отлично , теперь отправь текст уведомления")
+@dp.message(Reg.notify_text)
+async def notify_text(message: types.Message, state: FSMContext):
+    await state.update_data(notify_text=message.text)
+    data = await state.get_data()
+
+    # Отправка сообщения всем пользователям
+    for user in database['users']:
+        # Отпрвка фото
+        await bot.send_photo(
+            user["id"],
+            photo=types.FSInputFile(data["notify_photo"]))
+
+        # Отправка сообщения
+        await bot.send_message(
+            user["id"],
+            text=data["notify_text"])
+
+        time.sleep(1)
+
+    await state.clear()
+
+    # Удаление фото
+    os.remove(data["notify_photo"])
+
+    await bot.send_message(
+        message.from_user.id,
+        text="Рассылка уведомления завершена!")
+
+
 
 # CLICK - "btn_global_menu"
 @dp.callback_query(F.data == 'btn_global_menu')
@@ -574,7 +643,9 @@ async def main() -> None:
     # Запускаем получение обновлений
     try:
         logger.success("Скрипт запущен")
+
         await dp.start_polling(bot)
+
     except Exception:
         logger.error(Exception)
 if __name__ == "__main__":
