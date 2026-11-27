@@ -143,16 +143,19 @@ class GenMenu:
 
     def get_item_menu(self,ead):
         # Достаёт рандомный элемент по готовому меню(с указанием типа)
-        item_pos_ready_food = random.choice(self.eat_menu[ead])
-        for id in item_pos_ready_food:
-            for item_food in self.eat_menu['food']:
-                if item_food['id'] == id:
-                    if "allergens" in item_food:  # Если продукт содержит аллерген
-                        if not self.allergens[item_food["allergens"]]:
+        result = []
+        w = True
+        while w:
+            item_pos_ready_food = random.choice(self.eat_menu[ead])
 
-                            print(item_pos_ready_food)
-                            self.get_item_menu(ead)
-        return item_pos_ready_food
+            for id in item_pos_ready_food:# Каждый элемент связки
+                if "allergens" in self.eat_menu['food'][id]: # Айди блюда совпало с связкой
+                    if self.allergens[self.eat_menu['food'][id]['allergens']]:
+                        break
+            else:
+                w = False
+                result = item_pos_ready_food
+        return result
 
     # ЭТАПЫ СОЗДАНИЯ МЕНЮ
     def fun_recepton_food_to_protocol(self, food_protocol):
@@ -162,7 +165,6 @@ class GenMenu:
 
         # Перебираем приёмы пищи
         for ead in list(food_protocol.keys()):
-            print(ead)
             # рандомно добавляем список готовых блюд по приёму пищи
             if ead == "breakfast":
                 item_pos_ready_food = self.get_item_menu("ready_breakfast")
@@ -178,8 +180,6 @@ class GenMenu:
                 for item_food in self.eat_menu['food']:
                     if item_food['id'] == id:
                         food_protocol[ead].append([item_food, 1])
-
-            # Проверка на алергены
 
         return food_protocol
 
@@ -271,4 +271,4 @@ if __name__ == "__main__":
     gm = GenMenu()
 
     #gm.gen_ready_menu()
-    gm.gen_menu(gm.user_cpfc_to_CPFC('3600/120/60/400')[1], {"milk": True, "nuts": False, "honey": True})
+    gm.gen_menu(gm.user_cpfc_to_CPFC('3600/120/60/400')[1], {"milk": True, "nuts": True, "honey": True})
